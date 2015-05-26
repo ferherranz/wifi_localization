@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>wifi_loocalization</name>
+  <name>wifi_localization</name>
   <version>0.0.0</version>
   <description>The wifi_localization package</description>
 
