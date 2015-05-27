@@ -1,2 +1,3 @@
-string MAC
-uint32 dB
+string address
+string essid
+uint32 signal
