@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('wifi_lookup')
+import roslib; 
 import rospy, os, re
-from wifi_lookup.msg import WifiData, Wifi
+from wifi_localization.msg import WifiData, Wifi
 from geometry_msgs.msg import *
 from visualization_msgs.msg import *
 from pymongo import *
@@ -25,7 +25,7 @@ class GenMapNode():
 	
   def __init__(self):
     
-    self.thr_samples 	= 0
+    self.thr_samples 	= 4
     
     self.conn    	= Connection('localhost', 27017)
     self.db   		= self.conn["wifi_data"]
@@ -46,6 +46,7 @@ class GenMapNode():
     box_size = 2.0
     box_hsize = box_size/2.0 #half size
     
+    rospy.loginfo('Generating map')
     for i in range(0, self.gmap.info.width, int(round(step/resolution))):
       for j in range(0, self.gmap.info.height, int(round(step/resolution))):
 	
