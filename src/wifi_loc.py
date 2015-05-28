@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import roslib; 
-import rospy, sys
+import rospy, sys, tf
 from wifi_localization.msg import WifiData, Wifi
 from geometry_msgs.msg import *
 from visualization_msgs.msg import *
@@ -54,24 +54,38 @@ class WifiLocNode():
 	    scores.append(eu_dist)
 	    num_aps.append(count_aps)
 
-	
+	    
 	
 	  loc = self.findBestPose(locs, scores, num_aps)
-	    
 	  print loc
+	  #rospy.loginfo('wifi_loc: ' + loc)
+	  #setting up the message
+	  self.wifi_pose.header.stamp = rospy.Time.now()
+	  self.wifi_pose.header.frame_id = '/map'
+	  self.wifi_pose.pose.position.x = loc[0]
+	  self.wifi_pose.pose.position.y = loc[1]
+	  self.wifi_pose.pose.orientation = Quaternion(*tf.transformations.quaternion_from_euler(0, 0, 0))
+	  
+	  self.pub_loc.publish(self.wifi_pose)
+	  #print self.wifi_pose
+	  
+	    
+	  
 
 	def __init__(self):		
 		self.conn       = Connection('192.168.4.41', 27017)
 		self.db   	= self.conn["wifi_data"]
 		self.collection	= self.db["wifi_map"]
-		
+		self.wifi_pose	= PoseStamped()
 		rospy.Subscriber('wifi_data', WifiData, self.wifiDataCB)
+		self.pub_loc = rospy.Publisher('wifi_pose', PoseStamped, queue_size=10)
 		
 if __name__=='__main__':
 	rospy.init_node('wifi_loc')
 	try:
-	  loc_node = WifiLocNode()
 	  r = rospy.Rate(1)
-	  r.sleep()
+	  loc_node = WifiLocNode()
+	  while not rospy.is_shutdown():
+	    r.sleep()
 	except rospy.ROSInterruptException: pass
 	
