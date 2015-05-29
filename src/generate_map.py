@@ -11,6 +11,8 @@ import time
 import numpy as np
 
 
+size_cell = 2.0 #meters
+box_size_ = 1.0 #meters
 
 class GenMapNode():
   
@@ -25,7 +27,7 @@ class GenMapNode():
 	
   def __init__(self):
     
-    self.thr_samples 	= 4
+    self.thr_samples 	= 0
     
     self.conn    	= Connection('localhost', 27017)
     self.db   		= self.conn["wifi_data"]
@@ -41,9 +43,9 @@ class GenMapNode():
     
     resolution = self.gmap.info.resolution
     
-    step = 2.0
+    step = size_cell
 
-    box_size = 2.0
+    box_size = box_size_
     box_hsize = box_size/2.0 #half size
     
     rospy.loginfo('Generating map')
@@ -51,37 +53,36 @@ class GenMapNode():
       for j in range(0, self.gmap.info.height, int(round(step/resolution))):
 	
 	idata = i*self.gmap.info.width + j;
-	#Filter positions that are occupied or unknown
-	if self.gmap.data[idata] != -1 and self.gmap.data[idata] != 100 :
-	  ix = i*resolution + self.gmap.info.origin.position.x
-	  jy = j*resolution + self.gmap.info.origin.position.y
+	ix = i*resolution + self.gmap.info.origin.position.x
+	jy = j*resolution + self.gmap.info.origin.position.y
 	  
-	  box = [[float(ix-box_hsize),float(jy-box_hsize)],
-		[float(ix+box_hsize),float(jy+box_hsize)]]
+	box = [[float(ix-box_hsize),float(jy-box_hsize)],
+	      [float(ix+box_hsize),float(jy+box_hsize)]]
+	
+	#print ix, jy, box
+	#print '-----------------', ix, jy
+	aps = {}
+	for mac_add in self.wifi_data.find().distinct("address"):
 	  
-	  #print ix, jy, box
-	  #print '-----------------', ix, jy
-	  aps = {}
-	  for mac_add in self.wifi_data.find().distinct("address"):
-	    
-	    ap_box = self.wifi_data.find({'loc' : {'$within' : {'$box' : box }} , "address": mac_add})
-	    
-	    #ap_data = data_box.find({"address": mac_add})
-	    num_samples = ap_box.count()
-	    if num_samples > self.thr_samples :
-	      sls = []
-	      for obj in ap_box:
-		sls.append(obj['sl'])
-		
-	      essid = obj['essid'] 
-	      mean_sl = np.mean(sls)
-	      std_dev_sl = np.std(sls)
+	  ap_box = self.wifi_data.find({'loc' : {'$within' : {'$box' : box }} , "address": mac_add})
+	  
+	  #ap_data = data_box.find({"address": mac_add})
+	  num_samples = ap_box.count()
+	  if num_samples > self.thr_samples :
+	    sls = []
+	    for obj in ap_box:
+	      sls.append(obj['sl'])
 	      
-	      aps[mac_add] = {'mean': mean_sl, 'std_dev': std_dev_sl, 'num_samples': num_samples}
-	      #print essid, mac_add, ix, jy, mean_sl, std_dev_sl, num_samples
-	  if aps:	    
-	    map_data = {'data': aps, 'loc': [ix, jy] }
-	    self.wifi_map.insert(map_data)
+	    essid = obj['essid'] 
+	    mean_sl = np.mean(sls)
+	    std_dev_sl = np.std(sls)
+	    
+	    aps[mac_add] = {'mean': mean_sl, 'std_dev': std_dev_sl, 'num_samples': num_samples}
+	    #print essid, mac_add, ix, jy, mean_sl, std_dev_sl, num_samples
+	if aps:	    
+	  map_data = {'data': aps, 'loc': [ix, jy], 'box': box, 'box_size': box_size }
+	  self.wifi_map.insert(map_data)
+
 	
    
 	
