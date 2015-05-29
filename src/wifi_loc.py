@@ -8,9 +8,11 @@ from visualization_msgs.msg import *
 from pymongo import *
 import numpy as np
 
-percent_aps = 0.3
+import copy
+
+percent_aps = 0.0
 window_size = 5
-max_scans	= 4
+max_scans	= 2
 normalize_scores = True
 nbest_poses = 3
 class WifiLocNode():
@@ -37,21 +39,21 @@ class WifiLocNode():
 	  
 	  max_aps = max(num_aps)
 	  #print 'scores ', scores 
-	  
+	  scores_ = list(scores) # avoid pass-by-reference problem
 	  #penalize positions with a number of aps lower than max_aps multiply by a percentage
-	  for i in range(len(scores)):
+	  for i in range(len(scores_)):
 	    if normalize_scores :
-	      scores[i] = scores[i] / num_aps[i]
+	      scores_[i] = scores[i] / num_aps[i]
 	    if num_aps[i] < max_aps*percent_aps :
-	      scores[i] = float("inf")
-	  id_best_pose = scores.index(min(scores))    
+	      scores_[i] = float("inf")
+	  id_best_pose = scores_.index(min(scores_))    
 	  
 	  
-	  print 'scores ', scores 
+	  print 'scores ', scores_ 
 	  #print 'locs ', locs 
 	  print 'num_aps ', num_aps
 	  #print id_best_pose,locs[id_best_pose],scores[id_best_pose], num_aps[id_best_pose], max_aps
-	  return id_best_pose, locs[id_best_pose], scores[id_best_pose], num_aps[id_best_pose]
+	  return id_best_pose, locs[id_best_pose], scores_[id_best_pose], num_aps[id_best_pose]
 	  
 	def wifiDataCB(self, data):
 	  
@@ -71,10 +73,11 @@ class WifiLocNode():
 	    self.computePose()
 	  
 	def manageBestPoses(self, locs, scores, num_aps):
+	  print '------'
 	  #manage poses
 	  for i in range(nbest_poses) :
-	    ii, loc, min_scores,naps = self.findBestPose(locs, scores, num_aps)
-	    
+	    ii, loc, min_scores,naps = self.findBestPose(copy.copy(locs), copy.copy(scores), copy.copy(num_aps)) # deep copy, pass-by-value
+	    print loc, min_scores, naps
 	    if i == 1 :
 	      self.SetWifiPose(loc)
 	      
@@ -83,7 +86,7 @@ class WifiLocNode():
 	    scores.pop(ii)
 	    num_aps.pop(ii)
 	    
-	    print loc, min_scores, naps
+	    
 	    
 	    self.id += 1
 	    self.id = self.id % window_size*nbest_poses
@@ -132,7 +135,7 @@ class WifiLocNode():
 	  self.temp_data	= {}
 	  self.num_scans	= 0 
 	  
-	  manageBestPoses(locs, scores, num_aps):
+	  self.manageBestPoses(locs, scores, num_aps)
 
 	  
 	def __init__(self):		
