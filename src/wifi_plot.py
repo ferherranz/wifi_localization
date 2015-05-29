@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('wifi_lookup')
+import roslib; 
 import rospy, os, re
-from wifi_lookup.msg import WifiData, Wifi
 from geometry_msgs.msg import *
 from visualization_msgs.msg import *
 from pymongo import *
